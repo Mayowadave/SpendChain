@@ -1,0 +1,6 @@
+{
+  "name": "SpendChain",
+  "description": "Stacks-native Web3 financial analytics platform for tracking STX balances, sBTC bridge peg activity, PoX-4 stacking yield, Clarity smart contracts, and AI wallet insights.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
