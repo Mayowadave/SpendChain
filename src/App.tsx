@@ -1,6 +1,7 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { WalletProvider, useWallet } from './context/WalletContext';
 import { useStacksWalletData } from './hooks/useStacksWalletData';
+import { ErrorBoundary } from './components/ErrorBoundary';
 import { Navbar } from './components/Navbar';
 import { Sidebar } from './components/Sidebar';
 import { LandingPage } from './components/LandingPage';
@@ -8,6 +9,10 @@ import { DashboardView } from './components/DashboardView';
 import { WalletAnalysisView } from './components/WalletAnalysisView';
 import { TransactionsView } from './components/TransactionsView';
 import { AnalyticsView } from './components/AnalyticsView';
+import { WalletDnaView } from './components/WalletDnaView';
+import { ProtocolIntelligenceView } from './components/ProtocolIntelligenceView';
+import { SmartAlertsView } from './components/SmartAlertsView';
+import { EcosystemExplorerView } from './components/EcosystemExplorerView';
 import { AiInsightsView } from './components/AiInsightsView';
 import { SettingsView } from './components/SettingsView';
 import { ConnectWalletModal } from './components/ConnectWalletModal';
@@ -97,9 +102,14 @@ function AppContent() {
   const [selectedTxForDetail, setSelectedTxForDetail] = useState<Transaction | null>(null);
   const [aiCopilotPrompt, setAiCopilotPrompt] = useState<string | undefined>(undefined);
 
-  // Computed Totals
-  const totalBalanceUsd = wallets.reduce((acc, w) => acc + w.balanceUsd, 0);
-  const unspentApprovalsCount = wallets.reduce((acc, w) => acc + w.unspentApprovalsCount, 0);
+  // Computed Totals (Memoized for high performance)
+  const totalBalanceUsd = useMemo(() => {
+    return wallets.reduce((acc, w) => acc + (w.balanceUsd || 0), 0);
+  }, [wallets]);
+
+  const unspentApprovalsCount = useMemo(() => {
+    return wallets.reduce((acc, w) => acc + (w.unspentApprovalsCount || 0), 0);
+  }, [wallets]);
 
   // Add Wallet / Inspect Target Address
   const handleAddWallet = (newWalletPartial: Partial<Wallet>) => {
@@ -165,63 +175,97 @@ function AppContent() {
             unspentApprovals={unspentApprovalsCount}
           />
 
-          {/* Tab View Content Container */}
-          <main className="flex-1 min-w-0">
-            {currentTab === 'dashboard' && (
-              <DashboardView
-                wallets={wallets}
-                transactions={transactions}
-                categoryBreakdown={CATEGORY_BREAKDOWN}
-                onNavigateTab={(tab) => setCurrentTab(tab)}
-                onOpenTxDetail={(tx) => setSelectedTxForDetail(tx)}
-                onTriggerAi={handleTriggerAiWithPrompt}
-              />
-            )}
+          {/* Tab View Content Container with ErrorBoundary */}
+          <main className="flex-1 min-w-0" role="main" aria-label="SpendChain Dashboard Content">
+            <ErrorBoundary>
+              {currentTab === 'dashboard' && (
+                <DashboardView
+                  wallets={wallets}
+                  transactions={transactions}
+                  categoryBreakdown={CATEGORY_BREAKDOWN}
+                  onNavigateTab={(tab) => setCurrentTab(tab)}
+                  onOpenTxDetail={(tx) => setSelectedTxForDetail(tx)}
+                  onTriggerAi={handleTriggerAiWithPrompt}
+                />
+              )}
 
-            {currentTab === 'wallets' && (
-              <WalletAnalysisView
-                wallets={wallets}
-                onOpenConnectModal={() => setIsConnectModalOpen(true)}
-                onDeleteWallet={handleDeleteWallet}
-                onTriggerAi={handleTriggerAiWithPrompt}
-              />
-            )}
+              {currentTab === 'stacks-explorer' && (
+                <EcosystemExplorerView />
+              )}
 
-            {currentTab === 'transactions' && (
-              <TransactionsView
-                transactions={transactions}
-                onAddTransaction={handleAddTransaction}
-                onUpdateTransaction={handleUpdateTransaction}
-                onOpenTxDetail={(tx) => setSelectedTxForDetail(tx)}
-                activeAddress={activeAddress}
-                isSyncingData={isSyncingData}
-                onRefreshLiveData={refreshLiveData}
-                onInspectAddress={(addr) => setInspectAddress(addr)}
-              />
-            )}
 
-            {currentTab === 'analytics' && (
-              <AnalyticsView
-                transactions={transactions}
-                activeAddress={activeAddress}
-                onTriggerAi={handleTriggerAiWithPrompt}
-              />
-            )}
+              {currentTab === 'wallet-dna' && (
+                <WalletDnaView
+                  wallets={wallets}
+                  transactions={transactions}
+                  onTriggerAi={handleTriggerAiWithPrompt}
+                  onNavigateTab={(tab) => setCurrentTab(tab)}
+                />
+              )}
 
-            {currentTab === 'ai-insights' && (
-              <AiInsightsView
-                wallets={wallets}
-                transactions={transactions}
-                initialPrompt={aiCopilotPrompt}
-              />
-            )}
+              {currentTab === 'protocol-intelligence' && (
+                <ProtocolIntelligenceView
+                  wallets={wallets}
+                  transactions={transactions}
+                  onTriggerAi={handleTriggerAiWithPrompt}
+                  onNavigateTab={(tab) => setCurrentTab(tab)}
+                />
+              )}
 
-            {currentTab === 'settings' && (
-              <SettingsView
-                settings={settings}
-                onSaveSettings={(newSettings) => setSettings(newSettings)}
-              />
-            )}
+              {currentTab === 'smart-alerts' && (
+                <SmartAlertsView
+                  wallets={wallets}
+                  transactions={transactions}
+                  onTriggerAi={handleTriggerAiWithPrompt}
+                  onNavigateTab={(tab) => setCurrentTab(tab)}
+                />
+              )}
+
+              {currentTab === 'wallets' && (
+                <WalletAnalysisView
+                  wallets={wallets}
+                  onOpenConnectModal={() => setIsConnectModalOpen(true)}
+                  onDeleteWallet={handleDeleteWallet}
+                  onTriggerAi={handleTriggerAiWithPrompt}
+                />
+              )}
+
+              {currentTab === 'transactions' && (
+                <TransactionsView
+                  transactions={transactions}
+                  onAddTransaction={handleAddTransaction}
+                  onUpdateTransaction={handleUpdateTransaction}
+                  onOpenTxDetail={(tx) => setSelectedTxForDetail(tx)}
+                  activeAddress={activeAddress}
+                  isSyncingData={isSyncingData}
+                  onRefreshLiveData={refreshLiveData}
+                  onInspectAddress={(addr) => setInspectAddress(addr)}
+                />
+              )}
+
+              {currentTab === 'analytics' && (
+                <AnalyticsView
+                  transactions={transactions}
+                  activeAddress={activeAddress}
+                  onTriggerAi={handleTriggerAiWithPrompt}
+                />
+              )}
+
+              {currentTab === 'ai-insights' && (
+                <AiInsightsView
+                  wallets={wallets}
+                  transactions={transactions}
+                  initialPrompt={aiCopilotPrompt}
+                />
+              )}
+
+              {currentTab === 'settings' && (
+                <SettingsView
+                  settings={settings}
+                  onSaveSettings={(newSettings) => setSettings(newSettings)}
+                />
+              )}
+            </ErrorBoundary>
           </main>
 
         </div>
@@ -247,7 +291,9 @@ function AppContent() {
 export default function App() {
   return (
     <WalletProvider>
-      <AppContent />
+      <ErrorBoundary>
+        <AppContent />
+      </ErrorBoundary>
     </WalletProvider>
   );
 }

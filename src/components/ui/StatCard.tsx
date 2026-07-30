@@ -1,6 +1,6 @@
 import React from 'react';
 import { Card } from './Card';
-import { Skeleton } from './Skeleton';
+import { StatCardSkeleton } from './Skeleton';
 
 export interface StatCardProps {
   title: string;
@@ -21,47 +21,43 @@ export const StatCard: React.FC<StatCardProps> = ({
   value,
   subtext,
   icon,
-  iconBg = 'bg-blue-500/10 text-blue-400 border-blue-500/20',
+  iconBg = 'bg-indigo-500/10 text-indigo-400 border-indigo-500/20',
   trend,
   isLoading = false,
   className = '',
 }) => {
   if (isLoading) {
-    return (
-      <Card variant="glass" className={`space-y-3 ${className}`}>
-        <div className="flex items-center justify-between">
-          <Skeleton className="h-4 w-28" />
-          <Skeleton className="h-8 w-8 rounded-xl" />
-        </div>
-        <Skeleton className="h-8 w-36" />
-        <Skeleton className="h-3 w-24" />
-      </Card>
-    );
+    return <StatCardSkeleton />;
   }
 
   return (
-    <Card variant="glass" className={`space-y-2 border border-white/10 ${className}`}>
+    <Card 
+      variant="glass" 
+      hoverEffect
+      className={`space-y-3 relative group overflow-hidden ${className}`}
+    >
       <div className="flex items-center justify-between text-xs text-gray-400">
-        <span className="font-medium">{title}</span>
-        <div className={`p-2 rounded-xl border ${iconBg}`}>
+        <span className="font-semibold tracking-tight text-gray-300">{title}</span>
+        <div className={`p-2.5 rounded-xl border shrink-0 transition-transform group-hover:scale-110 duration-200 ${iconBg}`}>
           {icon}
         </div>
       </div>
       
-      <div className="text-2xl sm:text-3xl font-bold text-white font-mono tracking-tight">
+      <div className="text-2xl sm:text-3xl font-extrabold text-white font-mono tracking-tight leading-none">
         {value}
       </div>
 
-      <div className="flex items-center space-x-1.5 text-xs">
+      <div className="flex items-center space-x-2 text-xs pt-0.5">
         {trend && (
-          <span className={`font-semibold ${
+          <span className={`font-semibold font-mono ${
             trend.type === 'up' ? 'text-emerald-400' : trend.type === 'down' ? 'text-rose-400' : 'text-gray-400'
           }`}>
-            {trend.text}
+            {trend.type === 'up' ? '↑ ' : trend.type === 'down' ? '↓ ' : ''}{trend.text}
           </span>
         )}
-        {subtext && <span className="text-gray-400">{subtext}</span>}
+        {subtext && <span className="text-gray-400 truncate font-medium">{subtext}</span>}
       </div>
     </Card>
   );
 };
+

@@ -215,17 +215,45 @@ export const WalletAnalysisView: React.FC<WalletAnalysisViewProps> = ({
                 )}
               </div>
 
-              {/* Security Audit & Health Score */}
-              <div className="space-y-3 pt-2">
+              {/* Security Audit & 6-Factor Health Score System */}
+              <div className="space-y-3 pt-2 border-t border-white/5">
                 <div className="flex items-center justify-between text-xs">
-                  <span className="text-gray-300 font-medium">Clarity Contract & Health Score</span>
-                  <span className="font-mono font-bold text-emerald-400">{wallet.healthScore}/100</span>
+                  <span className="text-gray-300 font-medium">Wallet Health Score & Grade</span>
+                  <div className="flex items-center space-x-2">
+                    <span className="px-2 py-0.5 rounded-md bg-emerald-500/20 text-emerald-300 font-mono font-extrabold text-xs">
+                      {wallet.healthScore >= 90 ? 'Grade A' : wallet.healthScore >= 80 ? 'Grade B' : 'Grade C'}
+                    </span>
+                    <span className="font-mono font-bold text-emerald-400 text-sm">{wallet.healthScore}/100</span>
+                  </div>
                 </div>
+
                 <div className="w-full bg-slate-900 h-2 rounded-full overflow-hidden">
                   <div 
-                    className="bg-gradient-to-r from-emerald-500 to-teal-400 h-full rounded-full transition-all duration-500"
+                    className="bg-gradient-to-r from-emerald-500 via-teal-400 to-indigo-500 h-full rounded-full transition-all duration-500"
                     style={{ width: `${wallet.healthScore}%` }}
                   />
+                </div>
+
+                {/* 6-Factor Micro Breakdown Tags */}
+                <div className="grid grid-cols-3 gap-1.5 pt-1 text-[10px] font-mono">
+                  <div className="p-1.5 rounded-lg bg-slate-900 border border-white/5 text-gray-300 text-center">
+                    Security: <span className="text-emerald-400 font-bold">{approvalsCount > 0 ? '75%' : '100%'}</span>
+                  </div>
+                  <div className="p-1.5 rounded-lg bg-slate-900 border border-white/5 text-gray-300 text-center">
+                    Activity: <span className="text-indigo-400 font-bold">88%</span>
+                  </div>
+                  <div className="p-1.5 rounded-lg bg-slate-900 border border-white/5 text-gray-300 text-center">
+                    Diverse: <span className="text-amber-400 font-bold">90%</span>
+                  </div>
+                  <div className="p-1.5 rounded-lg bg-slate-900 border border-white/5 text-gray-300 text-center">
+                    DeFi: <span className="text-purple-400 font-bold">85%</span>
+                  </div>
+                  <div className="p-1.5 rounded-lg bg-slate-900 border border-white/5 text-gray-300 text-center">
+                    Fees: <span className="text-teal-400 font-bold">95%</span>
+                  </div>
+                  <div className="p-1.5 rounded-lg bg-slate-900 border border-white/5 text-gray-300 text-center">
+                    Age: <span className="text-blue-400 font-bold">90%</span>
+                  </div>
                 </div>
 
                 {/* Approvals Risk Banner */}

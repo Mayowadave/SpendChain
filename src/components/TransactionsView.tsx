@@ -11,7 +11,7 @@ import {
   Globe
 } from 'lucide-react';
 import { Transaction, TransactionCategory, TaxTag, ChainId } from '../types';
-import { Button, Badge, Card, SearchBar, Input, Select, Modal, EmptyState } from './ui';
+import { Button, Badge, Card, SearchBar, Input, Select, Modal, EmptyState, TableSkeleton } from './ui';
 
 interface TransactionsViewProps {
   transactions: Transaction[];
@@ -308,21 +308,24 @@ export const TransactionsView: React.FC<TransactionsViewProps> = ({
       </Card>
 
       {/* TRANSACTIONS TABLE */}
-      <div className="glass-panel rounded-3xl border border-white/10 overflow-hidden shadow-2xl">
-        <div className="overflow-x-auto">
-          <table className="w-full text-left text-xs text-gray-300">
-            <thead className="bg-slate-900/90 text-gray-400 uppercase text-[10px] font-semibold tracking-wider">
-              <tr>
-                <th className="px-5 py-3.5">Counterparty & Hash</th>
-                <th className="px-5 py-3.5">Layer & Clarity Call</th>
-                <th className="px-5 py-3.5">Category</th>
-                <th className="px-5 py-3.5">Post-Conditions</th>
-                <th className="px-5 py-3.5">Tax Tag</th>
-                <th className="px-5 py-3.5 text-right">Amount</th>
-                <th className="px-5 py-3.5 text-right">Gas (STX)</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-white/5 bg-[#0B1220]/60">
+      {isSyncingData ? (
+        <TableSkeleton rows={6} />
+      ) : (
+        <div className="glass-panel rounded-3xl border border-white/10 overflow-hidden shadow-2xl">
+          <div className="overflow-x-auto">
+            <table className="w-full text-left text-xs text-gray-300">
+              <thead className="bg-slate-900/90 text-gray-400 uppercase text-[10px] font-bold tracking-widest font-mono border-b border-white/10">
+                <tr>
+                  <th className="px-5 py-3.5">Counterparty & Hash</th>
+                  <th className="px-5 py-3.5">Layer & Clarity Call</th>
+                  <th className="px-5 py-3.5">Category</th>
+                  <th className="px-5 py-3.5">Post-Conditions</th>
+                  <th className="px-5 py-3.5">Tax Tag</th>
+                  <th className="px-5 py-3.5 text-right">Amount</th>
+                  <th className="px-5 py-3.5 text-right">Gas (STX)</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-white/5 bg-[#0A0F1D]/60">
               {filteredTransactions.length === 0 ? (
                 <tr>
                   <td colSpan={7} className="p-8">
@@ -342,8 +345,17 @@ export const TransactionsView: React.FC<TransactionsViewProps> = ({
                 filteredTransactions.map((tx) => (
                   <tr 
                     key={tx.id}
+                    tabIndex={0}
+                    role="button"
+                    aria-label={`Transaction details for ${tx.counterpartyName}, amount $${tx.amountUsd}`}
                     onClick={() => onOpenTxDetail(tx)}
-                    className="hover:bg-slate-800/60 cursor-pointer transition-colors"
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter' || e.key === ' ') {
+                        e.preventDefault();
+                        onOpenTxDetail(tx);
+                      }
+                    }}
+                    className="hover:bg-slate-800/60 focus:bg-slate-800/80 focus:outline-none focus:ring-2 focus:ring-indigo-500/50 cursor-pointer transition-colors"
                   >
                     <td className="px-5 py-4">
                       <div className="font-bold text-white text-sm">{tx.counterpartyName}</div>
@@ -398,6 +410,7 @@ export const TransactionsView: React.FC<TransactionsViewProps> = ({
           </table>
         </div>
       </div>
+      )}
 
       {/* ADD MANUAL ENTRY MODAL */}
       <Modal

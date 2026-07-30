@@ -1,5 +1,5 @@
 import React from 'react';
-import { FolderOpen } from 'lucide-react';
+import { Layers } from 'lucide-react';
 import { Button } from './Button';
 
 export interface EmptyStateProps {
@@ -12,7 +12,7 @@ export interface EmptyStateProps {
 }
 
 export const EmptyState: React.FC<EmptyStateProps> = ({
-  icon = <FolderOpen className="w-8 h-8 text-blue-400" />,
+  icon = <Layers className="w-8 h-8 text-indigo-400" />,
   title,
   description,
   actionLabel,
@@ -20,21 +20,27 @@ export const EmptyState: React.FC<EmptyStateProps> = ({
   className = '',
 }) => {
   return (
-    <div className={`p-10 rounded-3xl glass-panel border border-white/10 bg-[#0B1220]/60 text-center flex flex-col items-center justify-center space-y-4 ${className}`}>
-      <div className="p-4 rounded-2xl bg-blue-500/10 border border-blue-500/20">
-        {icon}
+    <div className={`py-12 px-6 rounded-3xl glass-panel border border-white/10 bg-[#0A0F1D]/80 text-center flex flex-col items-center justify-center space-y-4 shadow-xl ${className}`}>
+      <div className="relative">
+        <div className="absolute -inset-1 rounded-2xl bg-gradient-to-r from-indigo-500/20 to-amber-500/20 blur-sm" />
+        <div className="relative p-4 rounded-2xl bg-slate-900 border border-white/10 text-indigo-400 shadow-lg">
+          {icon}
+        </div>
       </div>
 
-      <div className="max-w-sm space-y-1">
-        <h4 className="text-base font-bold text-white">{title}</h4>
-        <p className="text-xs text-gray-400 leading-relaxed">{description}</p>
+      <div className="max-w-md space-y-1.5">
+        <h4 className="text-base font-extrabold text-white tracking-tight">{title}</h4>
+        <p className="text-xs text-gray-400 leading-relaxed font-sans">{description}</p>
       </div>
 
       {actionLabel && onAction && (
-        <Button variant="gradient" size="sm" onClick={onAction}>
-          {actionLabel}
-        </Button>
+        <div className="pt-2">
+          <Button variant="gradient" size="sm" onClick={onAction}>
+            {actionLabel}
+          </Button>
+        </div>
       )}
     </div>
   );
 };
+

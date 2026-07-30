@@ -255,8 +255,21 @@ export const AnalyticsView: React.FC<AnalyticsViewProps> = ({
                   <XAxis dataKey="monthLabel" stroke="#9CA3AF" fontSize={10} tickLine={false} />
                   <YAxis stroke="#9CA3AF" fontSize={11} tickLine={false} tickFormatter={(val) => `$${val}`} />
                   <Tooltip 
-                    contentStyle={{ backgroundColor: '#0B1220', borderColor: 'rgba(255,255,255,0.1)', borderRadius: '12px', color: '#fff', fontSize: '12px' }}
-                    formatter={(val: any) => [`$${Number(val).toLocaleString()}`, '']}
+                    content={({ active, payload, label }) => {
+                      if (active && payload && payload.length) {
+                        return (
+                          <div className="p-3 rounded-2xl bg-slate-900/95 border border-white/10 shadow-2xl backdrop-blur-md text-xs space-y-1">
+                            <p className="font-bold text-white">{label}</p>
+                            {payload.map((p: any, idx: number) => (
+                              <p key={idx} className="font-mono font-semibold" style={{ color: p.color }}>
+                                {p.name}: ${Number(p.value).toLocaleString()}
+                              </p>
+                            ))}
+                          </div>
+                        );
+                      }
+                      return null;
+                    }}
                   />
                   <Bar dataKey="totalSpentUsd" name="Outflows USD" fill="#F43F5E" radius={[4, 4, 0, 0]} />
                   <Bar dataKey="totalReceivedUsd" name="Inflows USD" fill="#10B981" radius={[4, 4, 0, 0]} />
@@ -307,8 +320,19 @@ export const AnalyticsView: React.FC<AnalyticsViewProps> = ({
                   <XAxis dataKey="dayLabel" stroke="#9CA3AF" fontSize={10} tickLine={false} />
                   <YAxis stroke="#9CA3AF" fontSize={11} tickLine={false} tickFormatter={(val) => `$${val}`} />
                   <Tooltip 
-                    contentStyle={{ backgroundColor: '#0B1220', borderColor: 'rgba(255,255,255,0.1)', borderRadius: '12px', color: '#fff', fontSize: '12px' }}
-                    formatter={(val: any, name: any) => [`$${Number(val).toLocaleString()}`, name === 'volumeUsd' ? 'Volume USD' : name]}
+                    content={({ active, payload, label }) => {
+                      if (active && payload && payload.length) {
+                        return (
+                          <div className="p-3 rounded-2xl bg-slate-900/95 border border-white/10 shadow-2xl backdrop-blur-md text-xs space-y-1">
+                            <p className="font-bold text-white">{label}</p>
+                            <p className="text-indigo-400 font-mono font-semibold">
+                              Volume: ${Number(payload[0].value).toLocaleString()}
+                            </p>
+                          </div>
+                        );
+                      }
+                      return null;
+                    }}
                   />
                   <Area type="monotone" dataKey="volumeUsd" stroke="#6366F1" fillOpacity={1} fill="url(#colorVol)" />
                 </AreaChart>

@@ -97,33 +97,33 @@ export const LandingPage: React.FC<LandingPageProps> = ({
             </p>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
-            <Card variant="glass" className="p-6 space-y-3">
-              <div className="p-3 w-fit rounded-xl bg-indigo-500/10 border border-indigo-500/20 text-indigo-400">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+            <Card variant="glass" hoverEffect className="p-6 sm:p-7 space-y-3.5 group">
+              <div className="p-3 w-fit rounded-xl bg-indigo-500/10 border border-indigo-500/20 text-indigo-400 group-hover:scale-110 transition-transform">
                 <BarChart3 className="w-5 h-5" />
               </div>
-              <h3 className="text-base font-bold text-white">On-Chain Asset Tracking</h3>
-              <p className="text-xs text-gray-300 leading-relaxed">
+              <h3 className="text-base font-extrabold text-white tracking-tight">On-Chain Asset Tracking</h3>
+              <p className="text-xs text-gray-300 leading-relaxed font-sans">
                 Monitor live STX, sBTC, SIP-010 token holdings, and active PoX Stacking balances directly from the Stacks blockchain.
               </p>
             </Card>
 
-            <Card variant="glass" className="p-6 space-y-3">
-              <div className="p-3 w-fit rounded-xl bg-amber-500/10 border border-amber-500/20 text-amber-400">
+            <Card variant="glass" hoverEffect className="p-6 sm:p-7 space-y-3.5 group">
+              <div className="p-3 w-fit rounded-xl bg-amber-500/10 border border-amber-500/20 text-amber-400 group-hover:scale-110 transition-transform">
                 <FileCode2 className="w-5 h-5" />
               </div>
-              <h3 className="text-base font-bold text-white">Clarity Contract Auditing</h3>
-              <p className="text-xs text-gray-300 leading-relaxed">
+              <h3 className="text-base font-extrabold text-white tracking-tight">Clarity Contract Auditing</h3>
+              <p className="text-xs text-gray-300 leading-relaxed font-sans">
                 Automatically map smart contract calls to financial categories, verify post-conditions, and analyze gas fee consumption.
               </p>
             </Card>
 
-            <Card variant="glass" className="p-6 space-y-3">
-              <div className="p-3 w-fit rounded-xl bg-teal-500/10 border border-teal-500/20 text-teal-400">
+            <Card variant="glass" hoverEffect className="p-6 sm:p-7 space-y-3.5 group">
+              <div className="p-3 w-fit rounded-xl bg-teal-500/10 border border-teal-500/20 text-teal-300 group-hover:scale-110 transition-transform">
                 <Bot className="w-5 h-5" />
               </div>
-              <h3 className="text-base font-bold text-white">AI Financial Copilot</h3>
-              <p className="text-xs text-gray-300 leading-relaxed">
+              <h3 className="text-base font-extrabold text-white tracking-tight">AI Financial Copilot</h3>
+              <p className="text-xs text-gray-300 leading-relaxed font-sans">
                 Get data-backed observations, ask questions about your cashflow history, and receive strategic recommendations via Gemini AI.
               </p>
             </Card>

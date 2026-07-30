@@ -156,3 +156,181 @@ export interface AppSettings {
   teamName: string;
 }
 
+// Smart Alerts System Types
+export type AlertEventType = 
+  | 'receive_stx'
+  | 'send_stx'
+  | 'new_nft'
+  | 'new_sip10'
+  | 'large_tx'
+  | 'contract_interaction'
+  | 'gas_spike';
+
+export type NotificationChannelId = 'dashboard' | 'email' | 'telegram' | 'webhook' | 'discord';
+
+export interface NotificationChannelConfig {
+  id: NotificationChannelId;
+  name: string;
+  enabled: boolean;
+  isFutureChannel?: boolean;
+  destination?: string; // e.g. email address, telegram @handle or Chat ID, webhook URL
+  description: string;
+  iconName: string;
+}
+
+export interface SmartAlertRule {
+  id: string;
+  name: string;
+  eventType: AlertEventType;
+  enabled: boolean;
+  thresholdValue?: number; // e.g. $500 for large_tx, 0.5 STX for gas_spike
+  walletAddress?: string; // specific wallet or 'all'
+  channels: NotificationChannelId[];
+  createdAt: string;
+  lastTriggeredAt?: string;
+  triggerCount: number;
+}
+
+export interface TriggeredAlert {
+  id: string;
+  ruleId: string;
+  ruleName: string;
+  eventType: AlertEventType;
+  title: string;
+  message: string;
+  severity: 'info' | 'warning' | 'critical';
+  timestamp: string;
+  txHash?: string;
+  amountUsd?: number;
+  read: boolean;
+  channelDispatched: NotificationChannelId[];
+}
+
+// Stacks Ecosystem Explorer Types
+export interface StacksNetworkStats {
+  stxPriceUsd: number;
+  priceChange24h: number;
+  marketCapUsd: number;
+  circulatingSupply: number;
+  totalTxToday: number;
+  blocksToday: number;
+  currentBlockHeight: number;
+  avgBlockTimeSeconds: number;
+  networkStatus: 'Operational' | 'Congested' | 'Upgrading';
+  nakamotoEpoch: string;
+  bitcoinBlockHeight: number;
+  mempoolSize: number;
+  lastUpdated: string;
+}
+
+export interface EcosystemHealthData {
+  overallHealthScore: number; // 0 - 100
+  networkActivityScore: number;
+  developerActivityScore: number;
+  protocolGrowthScore: number;
+  walletGrowthScore: number;
+  tvlTrendScore: number;
+  activeUsersCount: number;
+  txGrowthPercent: number;
+  aiExplanation: string;
+}
+
+export type ProtocolCategory = 'DeFi & DEX' | 'Lending & Yield' | 'Liquid Staking' | 'NFT & Gaming' | 'Infrastructure & Bridges' | 'Payments';
+export type ProtocolRiskLevel = 'Low' | 'Medium' | 'High' | 'Audited';
+
+export interface ProtocolDetail {
+  id: string;
+  name: string;
+  slug: string;
+  logoUrl?: string;
+  iconBg: string;
+  category: ProtocolCategory;
+  tvlUsd: number;
+  volume24hUsd: number;
+  weeklyGrowthPercent: number;
+  activeUsers24h: number;
+  totalTransactions24h: number;
+  riskLevel: ProtocolRiskLevel;
+  description: string;
+  websiteUrl: string;
+  auditReportUrl?: string;
+  launchDate: string;
+  smartContracts: string[];
+  protocolHealthScore: number; // 0-100
+  aiSummary: string;
+  riskAnalysis: string;
+  news: { title: string; date: string; link?: string; source: string }[];
+  relatedProtocolIds: string[];
+  historicalTvl: { date: string; tvlUsd: number; volumeUsd: number; users: number }[];
+}
+
+export interface LiveEcosystemEvent {
+  id: string;
+  type: 'large_transfer' | 'new_wallet' | 'nft_mint' | 'contract_deployed' | 'high_value_swap' | 'staking_deposit' | 'new_token';
+  title: string;
+  description: string;
+  timestamp: string;
+  txHash?: string;
+  valueUsd?: number;
+  category: string;
+  iconBg: string;
+}
+
+export interface ClarityContractDeployment {
+  id: string;
+  contractName: string;
+  contractAddress: string;
+  deployerAddress: string;
+  blockHeight: number;
+  deploymentTime: string;
+  verified: boolean;
+  explorerLink: string;
+  callsCount24h: number;
+  category: string;
+}
+
+export interface Sip10EcosystemToken {
+  id: string;
+  name: string;
+  symbol: string;
+  logoBg: string;
+  totalSupply: number;
+  decimals: number;
+  creatorAddress: string;
+  creationDate: string;
+  holdersCount: number;
+  priceUsd: number;
+  marketCapUsd: number;
+  verified: boolean;
+  riskBadge: 'Verified' | 'Unverified' | 'Community' | 'Warning';
+}
+
+export interface EcosystemNftCollection {
+  id: string;
+  name: string;
+  symbol: string;
+  logoBg: string;
+  floorPriceStx: number;
+  floorPriceUsd: number;
+  volume24hStx: number;
+  volume24hUsd: number;
+  ownersCount: number;
+  totalSupply: number;
+  transactions24h: number;
+  dailyChangePercent: number;
+  verified: boolean;
+}
+
+export interface EcosystemChartDataPoint {
+  date: string;
+  transactions: number;
+  activeWallets: number;
+  tvlUsd: number;
+  protocolVolumeUsd: number;
+  contractsDeployed: number;
+  stxTransfersUsd: number;
+  nftVolumeUsd: number;
+}
+
+
+

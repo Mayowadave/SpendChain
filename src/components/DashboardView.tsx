@@ -10,7 +10,11 @@ import {
   Zap,
   Coins,
   ShieldCheck,
-  Layers
+  Layers,
+  BellRing,
+  Mail,
+  Send,
+  CheckCircle2
 } from 'lucide-react';
 import { 
   AreaChart, 
@@ -29,6 +33,8 @@ import { SPEND_TIMELINE, SUPPORTED_CHAINS, STX_PRICE_USD, BTC_PRICE_USD } from '
 import { StatCard, Button, Badge, Card } from './ui';
 import { useWalletAnalytics, useAiInsights } from '../hooks/useWalletAnalytics';
 import { AiInsightCardsSection } from './AiInsightCardsSection';
+import { WalletStoryCard } from './WalletStoryCard';
+import { WalletHealthScoreCard, calculateHealthBreakdown } from './WalletHealthScoreCard';
 
 interface DashboardViewProps {
   wallets: Wallet[];
@@ -66,6 +72,7 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
   // Compute live wallet analytics and structured AI insight cards
   const analytics = useWalletAnalytics(transactions, wallets[0]?.address);
   const insights = useAiInsights(analytics);
+  const healthData = calculateHealthBreakdown(analytics, wallets);
 
   return (
     <div className="space-y-8 animate-fade-in pb-12">
@@ -96,6 +103,16 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
           </Button>
         </div>
       </div>
+
+      {/* HIGHLIGHT 1: YOUR WALLET STORY SECTION */}
+      <WalletStoryCard
+        analytics={analytics}
+        avgHealthScore={healthData.overallScore}
+        walletsCount={wallets.length}
+        totalBalanceUsd={totalBalanceUsd}
+        onTriggerAi={onTriggerAi}
+        onNavigateTab={onNavigateTab}
+      />
 
       {/* METRIC CARDS GRID */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
@@ -133,10 +150,18 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
           value={`${totalGasSpentStx.toFixed(1)} STX`}
           icon={<Flame className="w-4 h-4" />}
           iconBg="bg-emerald-500/10 text-emerald-400 border-emerald-500/20"
-          subtext={`Clarity Health: ${avgHealthScore}/100`}
+          subtext={`Health Score: ${healthData.overallScore}/100 (${healthData.letterGrade})`}
         />
 
       </div>
+
+      {/* HIGHLIGHT 2: COMPLETE WALLET HEALTH SCORE SYSTEM */}
+      <WalletHealthScoreCard
+        analytics={analytics}
+        wallets={wallets}
+        onTriggerAi={onTriggerAi}
+        onNavigateTab={onNavigateTab}
+      />
 
       {/* AI ON-CHAIN INSIGHTS CARDS */}
       <AiInsightCardsSection 
@@ -207,21 +232,32 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
               </div>
             ) : (
               <ResponsiveContainer width="100%" height="100%">
-                <AreaChart data={analytics.dailyActivity.map(d => ({ date: d.dayLabel, Volume: d.volumeUsd, Txs: d.txCount }))} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
+                <AreaChart data={analytics.dailyActivity.map(d => ({ date: d.dayLabel, Volume: d.volumeUsd, Txs: d.txCount }))} margin={{ top: 10, right: 10, left: -15, bottom: 0 }}>
                   <defs>
                     <linearGradient id="colorSpent" x1="0" y1="0" x2="0" y2="1">
-                      <stop offset="5%" stopColor="#5546FF" stopOpacity={0.4}/>
-                      <stop offset="95%" stopColor="#5546FF" stopOpacity={0.0}/>
+                      <stop offset="5%" stopColor="#6366F1" stopOpacity={0.45}/>
+                      <stop offset="95%" stopColor="#6366F1" stopOpacity={0.0}/>
                     </linearGradient>
                   </defs>
-                  <CartesianGrid strokeDasharray="3 3" stroke="rgba(255, 255, 255, 0.05)" />
-                  <XAxis dataKey="date" stroke="#9CA3AF" fontSize={11} tickLine={false} />
-                  <YAxis stroke="#9CA3AF" fontSize={11} tickLine={false} tickFormatter={(val) => `$${val}`} />
+                  <CartesianGrid strokeDasharray="3 3" stroke="rgba(255, 255, 255, 0.05)" vertical={false} />
+                  <XAxis dataKey="date" stroke="#9CA3AF" fontSize={11} tickLine={false} axisLine={false} />
+                  <YAxis stroke="#9CA3AF" fontSize={11} tickLine={false} axisLine={false} tickFormatter={(val) => `$${val}`} />
                   <Tooltip 
-                    contentStyle={{ backgroundColor: '#0B1220', borderColor: 'rgba(255,255,255,0.1)', borderRadius: '12px', color: '#fff', fontSize: '12px' }}
-                    formatter={(val: any) => [`$${val.toLocaleString()}`, 'Volume USD']}
+                    content={({ active, payload, label }) => {
+                      if (active && payload && payload.length) {
+                        return (
+                          <div className="p-3 rounded-2xl bg-slate-900/95 border border-white/10 shadow-2xl backdrop-blur-md text-xs space-y-1">
+                            <p className="font-bold text-white">{label}</p>
+                            <p className="text-indigo-400 font-mono font-semibold">
+                              Volume: ${payload[0].value?.toLocaleString()}
+                            </p>
+                          </div>
+                        );
+                      }
+                      return null;
+                    }}
                   />
-                  <Area type="monotone" dataKey="Volume" stroke="#5546FF" strokeWidth={2.5} fillOpacity={1} fill="url(#colorSpent)" />
+                  <Area type="monotone" dataKey="Volume" stroke="#6366F1" strokeWidth={2.5} fillOpacity={1} fill="url(#colorSpent)" />
                 </AreaChart>
               </ResponsiveContainer>
             )}
@@ -261,8 +297,20 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
                       ))}
                     </Pie>
                     <Tooltip 
-                      contentStyle={{ backgroundColor: '#0B1220', borderColor: 'rgba(255,255,255,0.1)', borderRadius: '12px', color: '#fff', fontSize: '12px' }}
-                      formatter={(value: any) => [`$${value.toLocaleString()}`, 'Amount']}
+                      content={({ active, payload }) => {
+                        if (active && payload && payload.length) {
+                          const data = payload[0];
+                          return (
+                            <div className="p-3 rounded-2xl bg-slate-900/95 border border-white/10 shadow-2xl backdrop-blur-md text-xs space-y-1">
+                              <p className="font-bold text-white">{data.name}</p>
+                              <p className="font-mono font-semibold" style={{ color: data.payload.color }}>
+                                ${Number(data.value).toLocaleString()}
+                              </p>
+                            </div>
+                          );
+                        }
+                        return null;
+                      }}
                     />
                   </PieChart>
                 </ResponsiveContainer>
@@ -283,6 +331,62 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
           </div>
         </div>
 
+      </div>
+
+      {/* SMART ALERTS & MULTI-CHANNEL NOTIFICATIONS WIDGET */}
+      <div className="glass-panel p-6 rounded-3xl border border-white/10 bg-slate-900/80 space-y-4">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+          <div className="flex items-center space-x-3">
+            <div className="p-2.5 rounded-2xl bg-amber-500/10 border border-amber-500/20 text-amber-400">
+              <BellRing className="w-5 h-5 animate-pulse" />
+            </div>
+            <div>
+              <div className="flex items-center space-x-2">
+                <h3 className="text-base font-extrabold text-white">Smart Alerts System</h3>
+                <Badge variant="emerald" size="sm">Active Monitor</Badge>
+              </div>
+              <p className="text-xs text-gray-400 font-sans">
+                Monitoring STX inflow/outflow, NFTs, SIP-010 tokens, whale transactions, Clarity calls, & gas spikes.
+              </p>
+            </div>
+          </div>
+
+          <Button
+            variant="secondary"
+            size="sm"
+            leftIcon={<BellRing className="w-3.5 h-3.5 text-amber-400" />}
+            onClick={() => onNavigateTab('smart-alerts')}
+          >
+            Configure Smart Alerts
+          </Button>
+        </div>
+
+        {/* Channel Status Pills */}
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 pt-2">
+          <div className="p-3 rounded-2xl bg-slate-950/80 border border-white/5 flex items-center justify-between">
+            <div className="flex items-center space-x-2">
+              <Badge variant="emerald" dot>Dashboard</Badge>
+              <span className="text-xs text-gray-300 font-mono font-medium">In-App Banner</span>
+            </div>
+            <span className="text-[11px] text-emerald-400 font-mono">🟢 Active</span>
+          </div>
+
+          <div className="p-3 rounded-2xl bg-slate-950/80 border border-white/5 flex items-center justify-between">
+            <div className="flex items-center space-x-2">
+              <Mail className="w-3.5 h-3.5 text-emerald-400" />
+              <span className="text-xs text-gray-300 font-mono font-medium">Email Dispatch</span>
+            </div>
+            <span className="text-[11px] text-emerald-400 font-mono">alerts@spendchain.io</span>
+          </div>
+
+          <div className="p-3 rounded-2xl bg-slate-950/80 border border-white/5 flex items-center justify-between">
+            <div className="flex items-center space-x-2">
+              <Send className="w-3.5 h-3.5 text-cyan-400" />
+              <span className="text-xs text-gray-300 font-mono font-medium">Telegram Bot</span>
+            </div>
+            <span className="text-[11px] text-cyan-400 font-mono">@SpendChain_Bot</span>
+          </div>
+        </div>
       </div>
 
       {/* RECENT STACKS CLARITY TRANSACTIONS LEDGER */}
@@ -324,8 +428,17 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
                 transactions.slice(0, 5).map((tx) => (
                   <tr 
                     key={tx.id} 
+                    tabIndex={0}
+                    role="button"
+                    aria-label={`View transaction detail for ${tx.counterpartyName}, amount $${tx.amountUsd}`}
                     onClick={() => onOpenTxDetail(tx)}
-                    className="hover:bg-slate-800/50 cursor-pointer transition-colors"
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter' || e.key === ' ') {
+                        e.preventDefault();
+                        onOpenTxDetail(tx);
+                      }
+                    }}
+                    className="hover:bg-slate-800/50 focus:bg-slate-800/70 focus:outline-none focus:ring-2 focus:ring-indigo-500/50 cursor-pointer transition-colors"
                   >
                     <td className="px-4 py-3.5">
                       <div className="font-semibold text-white text-sm">{tx.counterpartyName}</div>
