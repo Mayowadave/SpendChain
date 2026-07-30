@@ -142,7 +142,7 @@ export const WalletProvider: React.FC<{ children: React.ReactNode }> = ({ childr
         if (err.message === 'IFRAME_EXTENSION_RESTRICTED') {
           setError('Web3 browser extensions block popups inside embedded preview frames for security. Please click "Open in Standalone Tab ↗" above to connect directly on PC, or switch to "Manual Address or .btc" tab.');
         } else if (err.message === 'WALLET_TIMEOUT') {
-          setError('Wallet connection popup timed out or was blocked. Check if Xverse popup is open behind your browser window, or connect using the "Manual Address or .btc" tab.');
+          setError('Wallet connection timed out or extension popup was closed/locked. Please unlock your browser extension (Leather or Xverse), verify your PIN, and try connecting again, or use the "Manual Address or .btc" tab.');
         } else if (err.message === 'XVERSE_PERMISSION_DENIED') {
           setError('Connection request was not approved in Xverse. Please unlock your Xverse extension, verify permissions under Xverse Settings -> Connected Apps, or enter your Stacks address manually.');
         } else if (err.message === 'XVERSE_NOT_INSTALLED') {

@@ -1,5 +1,9 @@
-import { request, AddressPurpose, RpcErrorCode } from 'sats-connect';
+import { request as satsRequest, AddressPurpose, RpcErrorCode } from 'sats-connect';
+import { request as stacksRequest, authenticate, AppConfig, UserSession } from '@stacks/connect';
 import { WalletAdapter, WalletAccount } from './types';
+
+const appConfig = new AppConfig(['store_write', 'publish_data']);
+export const xverseUserSession = new UserSession({ appConfig });
 
 const withTimeout = <T>(promise: Promise<T>, ms: number, timeoutMsg: string): Promise<T> => {
   return new Promise((resolve, reject) => {
@@ -86,14 +90,14 @@ export const xverseAdapter: WalletAdapter = {
       );
     };
 
-    // --- PRIMARY: Official sats-connect Request ---
+    // --- STRATEGY 1: Official sats-connect Request (90s timeout) ---
     try {
       const response: any = await withTimeout(
-        request('getAddresses', {
+        satsRequest('getAddresses', {
           purposes: [AddressPurpose.Ordinals, AddressPurpose.Payment, AddressPurpose.Stacks],
           message: 'Authorize SpendChain to access your Stacks account for read-only analytics & tax ledger tracking.',
         }),
-        60000,
+        90000,
         'WALLET_TIMEOUT'
       );
 
@@ -142,7 +146,48 @@ export const xverseAdapter: WalletAdapter = {
       console.warn('sats-connect attempt note:', err);
     }
 
-    // --- SECONDARY FALLBACK: Single direct call to window provider ---
+    // --- STRATEGY 2: Official @stacks/connect SDK Request ---
+    try {
+      const win = typeof window !== 'undefined' ? (window as any) : {};
+      const providerObj = win.XverseProviders?.BitcoinProvider || win.XverseProviders?.StacksProvider || win.BitcoinProvider;
+
+      if (providerObj) {
+        const res: any = await withTimeout(
+          stacksRequest({ provider: providerObj }, 'getAddresses'),
+          90000,
+          'WALLET_TIMEOUT'
+        );
+
+        const addresses = res?.addresses || res?.result?.addresses || [];
+        const stacksAddr = addresses.find(
+          (a: any) =>
+            a.symbol === 'STX' ||
+            a.purpose === 'stacks' ||
+            a.address?.startsWith('SP') ||
+            a.address?.startsWith('ST')
+        ) || addresses[0];
+
+        if (stacksAddr && stacksAddr.address) {
+          return {
+            address: stacksAddr.address,
+            publicKey: stacksAddr.publicKey,
+            walletType: 'xverse',
+            chain: 'stacks-mainnet',
+            connectedAt: Date.now(),
+          };
+        }
+      }
+    } catch (err: any) {
+      if (isUserRejection(err)) {
+        throw new Error('USER_REJECTED');
+      }
+      if (err?.message === 'WALLET_TIMEOUT') {
+        throw err;
+      }
+      console.warn('Xverse @stacks/connect attempt note:', err);
+    }
+
+    // --- STRATEGY 3: Direct Call to Window Provider ---
     if (typeof window !== 'undefined') {
       const win = window as any;
       const provider =
@@ -159,7 +204,7 @@ export const xverseAdapter: WalletAdapter = {
               purposes: [AddressPurpose.Ordinals, AddressPurpose.Payment, AddressPurpose.Stacks],
               message: 'Authorize SpendChain',
             }),
-            30000,
+            90000,
             'WALLET_TIMEOUT'
           );
 
@@ -198,13 +243,82 @@ export const xverseAdapter: WalletAdapter = {
       }
     }
 
-    throw new Error('WALLET_TIMEOUT');
+    // --- STRATEGY 4: @stacks/connect authenticate callback ---
+    return new Promise((resolve, reject) => {
+      let resolved = false;
+
+      const timer = setTimeout(() => {
+        if (!resolved) {
+          resolved = true;
+          reject(new Error('WALLET_TIMEOUT'));
+        }
+      }, 90000);
+
+      try {
+        const win = typeof window !== 'undefined' ? (window as any) : {};
+        const providerObj = win.XverseProviders?.BitcoinProvider || win.XverseProviders?.StacksProvider || win.BitcoinProvider;
+
+        authenticate(
+          {
+            appDetails: {
+              name: 'SpendChain',
+              icon: typeof window !== 'undefined' ? `${window.location.origin}/favicon.ico` : '',
+            },
+            userSession: xverseUserSession,
+            onFinish: (payload: any) => {
+              if (resolved) return;
+              resolved = true;
+              clearTimeout(timer);
+
+              const userData = xverseUserSession.loadUserData?.() || payload?.authResponsePayload;
+              const mainnetAddr = userData?.profile?.stxAddress?.mainnet || userData?.profile?.stxAddress;
+              const address = typeof mainnetAddr === 'string' ? mainnetAddr : mainnetAddr?.address || '';
+
+              if (address) {
+                resolve({
+                  address,
+                  walletType: 'xverse',
+                  chain: 'stacks-mainnet',
+                  connectedAt: Date.now(),
+                });
+              } else {
+                reject(new Error('WALLET_TIMEOUT'));
+              }
+            },
+            onCancel: () => {
+              if (resolved) return;
+              resolved = true;
+              clearTimeout(timer);
+              reject(new Error('USER_REJECTED'));
+            },
+          },
+          providerObj
+        );
+      } catch (err: any) {
+        if (resolved) return;
+        resolved = true;
+        clearTimeout(timer);
+        if (isUserRejection(err)) {
+          reject(new Error('USER_REJECTED'));
+        } else {
+          reject(err);
+        }
+      }
+    });
   },
 
   async disconnect(): Promise<void> {
+    try {
+      if (xverseUserSession.isUserSignedIn()) {
+        xverseUserSession.signUserOut();
+      }
+    } catch (e) {
+      // Ignore cleanup error
+    }
     return Promise.resolve();
   },
 };
+
 
 
 

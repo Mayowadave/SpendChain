@@ -1,4 +1,8 @@
+import { request as stacksRequest, authenticate, AppConfig, UserSession } from '@stacks/connect';
 import { WalletAdapter, WalletAccount } from './types';
+
+const appConfig = new AppConfig(['store_write', 'publish_data']);
+export const leatherUserSession = new UserSession({ appConfig });
 
 const withTimeout = <T>(promise: Promise<T>, ms: number, timeoutMsg: string): Promise<T> => {
   return new Promise((resolve, reject) => {
@@ -22,7 +26,7 @@ export const leatherAdapter: WalletAdapter = {
   info: {
     id: 'leather',
     name: 'Leather Wallet',
-    description: 'Formerly Hiro Wallet - The pioneer wallet built for Bitcoin L2s & Stacks',
+    description: 'Formerly Hiro Wallet - Built for Bitcoin L2s & Stacks Web3 Apps',
     icon: 'leather',
     downloadUrl: 'https://leather.io/install',
   },
@@ -75,15 +79,86 @@ export const leatherAdapter: WalletAdapter = {
       throw new Error('LEATHER_NOT_INSTALLED');
     }
 
-    try {
+    const isUserRejection = (err: any) => {
+      const msg = (err?.message || err?.error?.message || String(err)).toLowerCase();
+      return (
+        msg.includes('user rejected') ||
+        msg.includes('user canceled') ||
+        msg.includes('user cancelled') ||
+        msg.includes('reject') ||
+        msg.includes('declined')
+      );
+    };
+
+    // --- STRATEGY 1: Direct Injected RPC Call (LeatherProvider / HiroWalletProvider / StacksProvider) ---
+    if (typeof window !== 'undefined') {
       const win = window as any;
-      const provider = win.LeatherProvider || win.HiroWalletProvider || win.StacksProvider || win.btc || win.stx;
+      const provider =
+        win.LeatherProvider ||
+        win.HiroWalletProvider ||
+        win.StacksProvider ||
+        win.btc ||
+        win.stx;
 
       if (provider && typeof provider.request === 'function') {
-        const res: any = await withTimeout(provider.request('getAddresses'), 30000, 'WALLET_TIMEOUT');
-        const addresses = res?.result?.addresses || res?.addresses || res?.result || [];
+        try {
+          const res: any = await withTimeout(
+            provider.request('getAddresses'),
+            90000,
+            'WALLET_TIMEOUT'
+          );
+
+          const addresses = res?.result?.addresses || res?.addresses || res?.result || [];
+          const stacksAddr = Array.isArray(addresses)
+            ? addresses.find(
+                (a: any) =>
+                  a.symbol === 'STX' ||
+                  a.purpose === 'stacks' ||
+                  a.address?.startsWith('SP') ||
+                  a.address?.startsWith('ST')
+              ) || addresses[0]
+            : null;
+
+          if (stacksAddr && stacksAddr.address) {
+            return {
+              address: stacksAddr.address,
+              publicKey: stacksAddr.publicKey,
+              walletType: 'leather',
+              chain: 'stacks-mainnet',
+              connectedAt: Date.now(),
+            };
+          }
+        } catch (err: any) {
+          if (isUserRejection(err)) {
+            throw new Error('USER_REJECTED');
+          }
+          if (err?.message === 'WALLET_TIMEOUT') {
+            throw err;
+          }
+          console.warn('Leather direct provider attempt note:', err);
+        }
+      }
+    }
+
+    // --- STRATEGY 2: Official @stacks/connect SDK Request ---
+    try {
+      const win = typeof window !== 'undefined' ? (window as any) : {};
+      const providerObj = win.LeatherProvider || win.HiroWalletProvider || win.StacksProvider;
+
+      if (providerObj) {
+        const res: any = await withTimeout(
+          stacksRequest({ provider: providerObj }, 'getAddresses'),
+          90000,
+          'WALLET_TIMEOUT'
+        );
+
+        const addresses = res?.addresses || res?.result?.addresses || [];
         const stacksAddr = addresses.find(
-          (a: any) => (a.symbol === 'STX' || a.purpose === 'stacks' || a.address?.startsWith('SP') || a.address?.startsWith('ST'))
+          (a: any) =>
+            a.symbol === 'STX' ||
+            a.purpose === 'stacks' ||
+            a.address?.startsWith('SP') ||
+            a.address?.startsWith('ST')
         ) || addresses[0];
 
         if (stacksAddr && stacksAddr.address) {
@@ -96,23 +171,91 @@ export const leatherAdapter: WalletAdapter = {
           };
         }
       }
-
-      throw new Error('WALLET_TIMEOUT');
     } catch (err: any) {
-      if (err.message === 'LEATHER_NOT_INSTALLED' || err.message === 'IFRAME_EXTENSION_RESTRICTED' || err.message === 'USER_REJECTED' || err.message === 'WALLET_TIMEOUT') {
-        throw err;
-      }
-      const msg = err.message || '';
-      if (msg.toLowerCase().includes('reject') || msg.toLowerCase().includes('cancel') || msg.toLowerCase().includes('declined')) {
+      if (isUserRejection(err)) {
         throw new Error('USER_REJECTED');
       }
-      throw new Error('WALLET_TIMEOUT');
+      if (err?.message === 'WALLET_TIMEOUT') {
+        throw err;
+      }
+      console.warn('Leather @stacks/connect attempt note:', err);
     }
+
+    // --- STRATEGY 3: @stacks/connect authenticate callback ---
+    return new Promise((resolve, reject) => {
+      let resolved = false;
+
+      const timer = setTimeout(() => {
+        if (!resolved) {
+          resolved = true;
+          reject(new Error('WALLET_TIMEOUT'));
+        }
+      }, 90000);
+
+      try {
+        const win = typeof window !== 'undefined' ? (window as any) : {};
+        const providerObj = win.LeatherProvider || win.HiroWalletProvider || win.StacksProvider;
+
+        authenticate(
+          {
+            appDetails: {
+              name: 'SpendChain',
+              icon: typeof window !== 'undefined' ? `${window.location.origin}/favicon.ico` : '',
+            },
+            userSession: leatherUserSession,
+            onFinish: (payload: any) => {
+              if (resolved) return;
+              resolved = true;
+              clearTimeout(timer);
+
+              const userData = leatherUserSession.loadUserData?.() || payload?.authResponsePayload;
+              const mainnetAddr = userData?.profile?.stxAddress?.mainnet || userData?.profile?.stxAddress;
+              const address = typeof mainnetAddr === 'string' ? mainnetAddr : mainnetAddr?.address || '';
+
+              if (address) {
+                resolve({
+                  address,
+                  walletType: 'leather',
+                  chain: 'stacks-mainnet',
+                  connectedAt: Date.now(),
+                });
+              } else {
+                reject(new Error('WALLET_TIMEOUT'));
+              }
+            },
+            onCancel: () => {
+              if (resolved) return;
+              resolved = true;
+              clearTimeout(timer);
+              reject(new Error('USER_REJECTED'));
+            },
+          },
+          providerObj
+        );
+      } catch (err: any) {
+        if (resolved) return;
+        resolved = true;
+        clearTimeout(timer);
+        if (isUserRejection(err)) {
+          reject(new Error('USER_REJECTED'));
+        } else {
+          reject(err);
+        }
+      }
+    });
   },
 
   async disconnect(): Promise<void> {
+    try {
+      if (leatherUserSession.isUserSignedIn()) {
+        leatherUserSession.signUserOut();
+      }
+    } catch (e) {
+      // Ignore cleanup error
+    }
     return Promise.resolve();
   },
 };
+
 
 
