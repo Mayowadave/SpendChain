@@ -44,13 +44,35 @@ export const WalletProvider: React.FC<{ children: React.ReactNode }> = ({ childr
   const [error, setError] = useState<string | null>(null);
   const [accountData, setAccountData] = useState<StacksAccountBalance | null>(null);
 
+  const [installedMap, setInstalledMap] = useState<Record<string, boolean>>({});
+
+  const checkInstalledWallets = useCallback(() => {
+    const map: Record<string, boolean> = {};
+    getAllWalletAdapters().forEach(adapter => {
+      map[adapter.info.id] = adapter.isInstalled();
+    });
+    setInstalledMap(map);
+  }, []);
+
+  useEffect(() => {
+    checkInstalledWallets();
+    const t1 = setTimeout(checkInstalledWallets, 500);
+    const t2 = setTimeout(checkInstalledWallets, 1500);
+    window.addEventListener('focus', checkInstalledWallets);
+    return () => {
+      clearTimeout(t1);
+      clearTimeout(t2);
+      window.removeEventListener('focus', checkInstalledWallets);
+    };
+  }, [checkInstalledWallets]);
+
   // Re-check installed status for registered wallets
   const availableWallets = useMemo(() => {
     return getAllWalletAdapters().map(adapter => ({
       ...adapter,
-      installed: adapter.isInstalled(),
+      installed: Boolean(installedMap[adapter.info.id]),
     }));
-  }, []);
+  }, [installedMap]);
 
   // Fetch real on-chain Hiro API data when address is available
   const refreshAccountData = useCallback(async () => {

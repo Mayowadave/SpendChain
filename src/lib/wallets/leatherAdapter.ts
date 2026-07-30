@@ -30,25 +30,38 @@ export const leatherAdapter: WalletAdapter = {
   isInstalled(): boolean {
     if (typeof window === 'undefined') return false;
     const win = window as any;
-    let parentInjected = false;
+
+    const hasLeather = Boolean(
+      win.LeatherProvider ||
+      win.HiroWalletProvider ||
+      win.HiroWallet ||
+      win.Leather ||
+      win.StacksProvider?.isLeather ||
+      win.StacksProvider?.isHiro ||
+      win.LeatherProvider?.isLeather
+    );
+
+    if (hasLeather) return true;
+
     try {
       if (window.parent && window.parent !== window) {
         const p = window.parent as any;
-        parentInjected = Boolean(p.LeatherProvider || p.HiroWalletProvider || p.StacksProvider);
+        if (
+          p.LeatherProvider ||
+          p.HiroWalletProvider ||
+          p.HiroWallet ||
+          p.Leather ||
+          p.StacksProvider?.isLeather ||
+          p.StacksProvider?.isHiro
+        ) {
+          return true;
+        }
       }
     } catch (e) {
       // Ignore cross-origin frame error
     }
 
-    return Boolean(
-      win.LeatherProvider ||
-      win.HiroWalletProvider ||
-      win.StacksProvider ||
-      win.HiroWallet ||
-      win.btc ||
-      win.stx ||
-      parentInjected
-    );
+    return false;
   },
 
   async connect(): Promise<WalletAccount> {

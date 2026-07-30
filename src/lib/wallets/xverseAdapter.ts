@@ -31,32 +31,37 @@ export const xverseAdapter: WalletAdapter = {
   isInstalled(): boolean {
     if (typeof window === 'undefined') return false;
     const win = window as any;
-    let parentInjected = false;
+
+    const hasXverse = Boolean(
+      win.XverseProviders?.StacksProvider ||
+      win.XverseProviders?.BitcoinProvider ||
+      win.XverseProviders ||
+      win.Xverse ||
+      win.satsConnect ||
+      win.BitcoinProvider?.isXverse ||
+      win.StacksProvider?.isXverse
+    );
+
+    if (hasXverse) return true;
+
     try {
       if (window.parent && window.parent !== window) {
         const p = window.parent as any;
-        parentInjected = Boolean(
-          p.XverseProviders || p.BitcoinProvider || p.StacksProvider || p.satsConnect || p.Xverse
-        );
+        if (
+          p.XverseProviders ||
+          p.Xverse ||
+          p.satsConnect ||
+          p.BitcoinProvider?.isXverse ||
+          p.StacksProvider?.isXverse
+        ) {
+          return true;
+        }
       }
     } catch (e) {
       // Ignore cross-origin frame error
     }
 
-    return Boolean(
-      win.XverseProviders?.StacksProvider ||
-      win.XverseProviders?.BitcoinProvider ||
-      win.XverseProviders ||
-      win.BitcoinProvider?.isXverse ||
-      win.StacksProvider?.isXverse ||
-      win.satsConnect ||
-      win.BitcoinProvider ||
-      win.StacksProvider ||
-      win.Xverse ||
-      win.btc ||
-      win.stx ||
-      parentInjected
-    );
+    return false;
   },
 
   async connect(): Promise<WalletAccount> {
