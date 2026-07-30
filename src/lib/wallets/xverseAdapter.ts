@@ -1,6 +1,24 @@
 import { request, AddressPurpose, RpcErrorCode } from 'sats-connect';
 import { WalletAdapter, WalletAccount } from './types';
 
+const withTimeout = <T>(promise: Promise<T>, ms: number, timeoutMsg: string): Promise<T> => {
+  return new Promise((resolve, reject) => {
+    const timer = setTimeout(() => {
+      reject(new Error(timeoutMsg));
+    }, ms);
+
+    promise
+      .then((res) => {
+        clearTimeout(timer);
+        resolve(res);
+      })
+      .catch((err) => {
+        clearTimeout(timer);
+        reject(err);
+      });
+  });
+};
+
 export const xverseAdapter: WalletAdapter = {
   info: {
     id: 'xverse',
@@ -42,13 +60,102 @@ export const xverseAdapter: WalletAdapter = {
   },
 
   async connect(): Promise<WalletAccount> {
+    const isIframe = typeof window !== 'undefined' && window.self !== window.top;
+
+    if (isIframe) {
+      throw new Error('IFRAME_EXTENSION_RESTRICTED');
+    }
+
+    if (!this.isInstalled()) {
+      throw new Error('XVERSE_NOT_INSTALLED');
+    }
+
+    const isUserRejection = (err: any) => {
+      const msg = (err?.message || err?.error?.message || String(err)).toLowerCase();
+      return (
+        msg.includes('user rejected') ||
+        msg.includes('user canceled') ||
+        msg.includes('user cancelled') ||
+        msg.includes('reject') ||
+        msg.includes('declined')
+      );
+    };
+
+    // --- STRATEGY 1: Direct Injected Window Providers (Instant extension popup) ---
+    if (typeof window !== 'undefined') {
+      const win = window as any;
+      const providers = [
+        win.XverseProviders?.BitcoinProvider,
+        win.XverseProviders?.StacksProvider,
+        win.BitcoinProvider,
+        win.StacksProvider,
+        win.btc,
+        win.stx,
+        win.Xverse,
+      ].filter(Boolean);
+
+      for (const provider of providers) {
+        if (!provider || typeof provider.request !== 'function') continue;
+
+        const methods = ['getAddresses', 'stx_getAddresses', 'stx_getAccounts', 'requestAccounts'];
+        for (const method of methods) {
+          try {
+            const directPromise = provider.request(method, {
+              purposes: [AddressPurpose.Ordinals, AddressPurpose.Payment, AddressPurpose.Stacks],
+              message: 'Authorize SpendChain to access your Stacks account for read-only analytics.',
+            });
+
+            const directRes: any = await withTimeout(directPromise, 40000, 'WALLET_TIMEOUT');
+
+            const directAddresses: any[] = 
+              Array.isArray(directRes?.result?.addresses) ? directRes.result.addresses :
+              Array.isArray(directRes?.result) ? directRes.result :
+              Array.isArray(directRes?.addresses) ? directRes.addresses :
+              Array.isArray(directRes) ? directRes : [];
+
+            const stacksObj = directAddresses.find(
+              (addr: any) =>
+                addr.purpose === 'stacks' ||
+                addr.purpose === AddressPurpose.Stacks ||
+                addr.symbol === 'STX' ||
+                addr.address?.startsWith('SP') ||
+                addr.address?.startsWith('ST')
+            ) || directAddresses.find((addr: any) => addr.address?.startsWith('SP') || addr.address?.startsWith('ST'));
+
+            if (stacksObj && stacksObj.address) {
+              return {
+                address: stacksObj.address,
+                publicKey: stacksObj.publicKey,
+                walletType: 'xverse',
+                chain: 'stacks-mainnet',
+                connectedAt: Date.now(),
+              };
+            }
+          } catch (err: any) {
+            if (isUserRejection(err)) {
+              throw new Error('USER_REJECTED');
+            }
+          }
+        }
+      }
+    }
+
+    // --- STRATEGY 2: sats-connect (Official Library Request) ---
     try {
-      const response: any = await request('getAddresses', {
-        purposes: [AddressPurpose.Stacks],
+      const satsPromise = request('getAddresses', {
+        purposes: [AddressPurpose.Ordinals, AddressPurpose.Payment, AddressPurpose.Stacks],
         message: 'Authorize SpendChain to access your Stacks account for read-only analytics & tax ledger tracking.',
       });
 
-      // Safely extract addresses array from all sats-connect / Xverse response formats
+      const response: any = await withTimeout(satsPromise, 40000, 'WALLET_TIMEOUT');
+
+      if (response?.error) {
+        const errCode = response.error.code;
+        if (errCode === RpcErrorCode.USER_REJECTION || errCode === -31001 || isUserRejection(response.error)) {
+          throw new Error('USER_REJECTED');
+        }
+      }
+
       const addresses: any[] = 
         Array.isArray(response?.result?.addresses) ? response.result.addresses :
         Array.isArray(response?.result) ? response.result :
@@ -56,17 +163,15 @@ export const xverseAdapter: WalletAdapter = {
         Array.isArray(response) ? response :
         [];
 
-      const isSuccess = response?.status === 'success' || addresses.length > 0;
-
-      if (isSuccess && addresses.length > 0) {
+      if (addresses.length > 0) {
         const stacksAddressObj = addresses.find(
           (addr: any) =>
             addr.purpose === AddressPurpose.Stacks ||
             addr.purpose === 'stacks' ||
+            addr.symbol === 'STX' ||
             addr.address?.startsWith('SP') ||
-            addr.address?.startsWith('ST') ||
-            addr.symbol === 'STX'
-        ) || addresses[0];
+            addr.address?.startsWith('ST')
+        ) || addresses.find((addr: any) => addr.address?.startsWith('SP') || addr.address?.startsWith('ST')) || addresses[0];
 
         if (stacksAddressObj && stacksAddressObj.address) {
           return {
@@ -78,98 +183,26 @@ export const xverseAdapter: WalletAdapter = {
           };
         }
       }
-
-      // Direct window provider fallback if sats-connect result format differs
-      if (typeof window !== 'undefined') {
-        const win = window as any;
-        const provider = win.XverseProviders?.StacksProvider || win.XverseProviders?.BitcoinProvider || win.BitcoinProvider || win.StacksProvider;
-        if (provider && typeof provider.request === 'function') {
-          try {
-            const directRes = await provider.request('getAddresses');
-            const directAddresses: any[] = 
-              Array.isArray(directRes?.result?.addresses) ? directRes.result.addresses :
-              Array.isArray(directRes?.result) ? directRes.result :
-              Array.isArray(directRes?.addresses) ? directRes.addresses : [];
-
-            const directStacksObj = directAddresses.find(
-              (addr: any) =>
-                addr.purpose === 'stacks' ||
-                addr.purpose === AddressPurpose.Stacks ||
-                addr.address?.startsWith('SP') ||
-                addr.address?.startsWith('ST')
-            ) || directAddresses[0];
-
-            if (directStacksObj && directStacksObj.address) {
-              return {
-                address: directStacksObj.address,
-                publicKey: directStacksObj.publicKey,
-                walletType: 'xverse',
-                chain: 'stacks-mainnet',
-                connectedAt: Date.now(),
-              };
-            }
-          } catch (directErr) {
-            console.warn('Xverse direct provider fallback error:', directErr);
-          }
-        }
-      }
-
-      // Handle explicit errors returned in response object
-      const errCode = response?.error?.code;
-      const errMsg = response?.error?.message || '';
-
-      if (
-        errCode === RpcErrorCode.USER_REJECTION ||
-        errMsg.toLowerCase().includes('reject') ||
-        errMsg.toLowerCase().includes('cancel') ||
-        errMsg.toLowerCase().includes('declined')
-      ) {
+    } catch (err: any) {
+      const msg = err?.message || String(err);
+      if (msg === 'USER_REJECTED' || isUserRejection(err)) {
         throw new Error('USER_REJECTED');
       }
-
-      if (errMsg) {
-        throw new Error(errMsg);
-      }
-
-      const isIframe = typeof window !== 'undefined' && window.self !== window.top;
-      if (!this.isInstalled()) {
-        if (isIframe) {
-          throw new Error('IFRAME_EXTENSION_RESTRICTED');
-        } else {
-          throw new Error('XVERSE_NOT_INSTALLED');
-        }
-      }
-
-      throw new Error('No Stacks address returned from Xverse wallet.');
-    } catch (err: any) {
-      if (err.message === 'USER_REJECTED') {
+      if (msg === 'WALLET_TIMEOUT') {
         throw err;
       }
-      
-      const msg = err.message || '';
-      if (
-        msg.toLowerCase().includes('user rejected') ||
-        msg.toLowerCase().includes('user cancelled') ||
-        msg.toLowerCase().includes('declined')
-      ) {
-        throw new Error('USER_REJECTED');
-      }
-
-      const isIframe = typeof window !== 'undefined' && window.self !== window.top;
-      if (!this.isInstalled() || msg.toLowerCase().includes('not found') || msg.toLowerCase().includes('provider')) {
-        if (isIframe) {
-          throw new Error('IFRAME_EXTENSION_RESTRICTED');
-        } else {
-          throw new Error('XVERSE_NOT_INSTALLED');
-        }
-      }
-
-      throw new Error(msg || 'Failed to connect to Xverse wallet.');
+      console.warn('sats-connect attempt note:', msg);
     }
+
+    throw new Error('WALLET_TIMEOUT');
   },
 
   async disconnect(): Promise<void> {
     return Promise.resolve();
   },
 };
+
+
+
+
 

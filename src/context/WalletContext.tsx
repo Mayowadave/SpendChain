@@ -112,18 +112,24 @@ export const WalletProvider: React.FC<{ children: React.ReactNode }> = ({ childr
 
       setWalletSession(account);
     } catch (err: any) {
-      console.error(`Error connecting to ${walletId}:`, err);
-
       if (err.message === 'USER_REJECTED') {
-        setError('Connection request was declined in your wallet popup. Click connect when ready.');
-      } else if (err.message === 'IFRAME_EXTENSION_RESTRICTED') {
-        setError('Xverse extension cannot reach embedded preview windows. Please open SpendChain in a new tab to authorize with Xverse.');
-      } else if (err.message === 'XVERSE_NOT_INSTALLED') {
-        setError('Xverse wallet extension was not detected. If you have Xverse installed, open SpendChain in a standalone tab or check extension permissions.');
-      } else if (err.message === 'LEATHER_NOT_INSTALLED') {
-        setError('Leather wallet extension was not detected. If you have Leather installed, open SpendChain in a standalone tab.');
+        setError('Connection request was cancelled or closed. Click connect again when ready, or use the 1-Click Sample Address / Manual Entry option.');
       } else {
-        setError(err.message || `Failed to connect ${walletId} wallet. Please try again.`);
+        console.error(`Error connecting to ${walletId}:`, err);
+
+        if (err.message === 'IFRAME_EXTENSION_RESTRICTED') {
+          setError('Web3 browser extensions block popups inside embedded preview frames for security. Please click "Open in Standalone Tab ↗" above to connect directly on PC, or switch to "Manual Address or .btc" tab.');
+        } else if (err.message === 'WALLET_TIMEOUT') {
+          setError('Wallet connection popup timed out or was blocked. Check if Xverse popup is open behind your browser window, or connect using the "Manual Address or .btc" tab.');
+        } else if (err.message === 'XVERSE_PERMISSION_DENIED') {
+          setError('Connection request was not approved in Xverse. Please unlock your Xverse extension, verify permissions under Xverse Settings -> Connected Apps, or enter your Stacks address manually.');
+        } else if (err.message === 'XVERSE_NOT_INSTALLED') {
+          setError('Xverse wallet extension was not detected in this browser. Please install Xverse or enter your Stacks address in the Manual tab.');
+        } else if (err.message === 'LEATHER_NOT_INSTALLED') {
+          setError('Leather wallet extension was not detected. Please install Leather or enter your address in the Manual tab.');
+        } else {
+          setError(err.message || `Failed to connect ${walletId} wallet. Please try again or use manual address entry.`);
+        }
       }
     } finally {
       setIsConnecting(false);
