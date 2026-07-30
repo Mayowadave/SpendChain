@@ -15,8 +15,7 @@ import {
   BellRing,
   ReceiptText,
   BarChart3,
-  Bot,
-  Settings
+  Bot
 } from 'lucide-react';
 import { AppSettings } from '../types';
 import { Button, Badge } from './ui';
@@ -51,8 +50,7 @@ export const Navbar: React.FC<NavbarProps> = ({
     { id: 'wallets', label: 'Stacks Wallets', icon: Wallet },
     { id: 'transactions', label: 'Clarity Ledger', icon: ReceiptText },
     { id: 'analytics', label: 'Protocol Analytics', icon: BarChart3 },
-    { id: 'ai-insights', label: 'AI Copilot', icon: Bot, badge: 'Gemini' },
-    { id: 'settings', label: 'Settings', icon: Settings }
+    { id: 'ai-insights', label: 'AI Copilot', icon: Bot, badge: 'Gemini' }
   ];
 
 

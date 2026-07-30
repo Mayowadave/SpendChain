@@ -8,7 +8,6 @@ import {
   Wallet, 
   ReceiptText, 
   BarChart3, 
-  Settings, 
   ShieldAlert,
   ArrowUpRight,
   Bot,
@@ -37,7 +36,6 @@ export const Sidebar: React.FC<SidebarProps> = ({
     { id: 'transactions', label: 'Clarity Ledger', icon: ReceiptText },
     { id: 'analytics', label: 'Protocol Analytics', icon: BarChart3 },
     { id: 'ai-insights', label: 'AI Wallet Copilot', icon: Bot, badge: 'Gemini' },
-    { id: 'settings', label: 'Settings & RPC', icon: Settings },
   ];
 
 

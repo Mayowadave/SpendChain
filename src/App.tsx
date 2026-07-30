@@ -14,7 +14,6 @@ import { ProtocolIntelligenceView } from './components/ProtocolIntelligenceView'
 import { SmartAlertsView } from './components/SmartAlertsView';
 import { EcosystemExplorerView } from './components/EcosystemExplorerView';
 import { AiInsightsView } from './components/AiInsightsView';
-import { SettingsView } from './components/SettingsView';
 import { ConnectWalletModal } from './components/ConnectWalletModal';
 import { TransactionDetailModal } from './components/TransactionDetailModal';
 
@@ -161,6 +160,7 @@ function AppContent() {
         <LandingPage
           onLaunchApp={() => setCurrentTab('dashboard')}
           onOpenConnectModal={() => setIsConnectModalOpen(true)}
+          onNavigateToExplorer={() => setCurrentTab('stacks-explorer')}
         />
       ) : (
         <div className="max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 pt-6 flex flex-1 gap-6">
@@ -256,13 +256,6 @@ function AppContent() {
                   wallets={wallets}
                   transactions={transactions}
                   initialPrompt={aiCopilotPrompt}
-                />
-              )}
-
-              {currentTab === 'settings' && (
-                <SettingsView
-                  settings={settings}
-                  onSaveSettings={(newSettings) => setSettings(newSettings)}
                 />
               )}
             </ErrorBoundary>
