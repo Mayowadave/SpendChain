@@ -81,77 +81,21 @@ export const xverseAdapter: WalletAdapter = {
       );
     };
 
-    // --- STRATEGY 1: Direct Injected Window Providers (Instant extension popup) ---
-    if (typeof window !== 'undefined') {
-      const win = window as any;
-      const providers = [
-        win.XverseProviders?.BitcoinProvider,
-        win.XverseProviders?.StacksProvider,
-        win.BitcoinProvider,
-        win.StacksProvider,
-        win.btc,
-        win.stx,
-        win.Xverse,
-      ].filter(Boolean);
-
-      for (const provider of providers) {
-        if (!provider || typeof provider.request !== 'function') continue;
-
-        const methods = ['getAddresses', 'stx_getAddresses', 'stx_getAccounts', 'requestAccounts'];
-        for (const method of methods) {
-          try {
-            const directPromise = provider.request(method, {
-              purposes: [AddressPurpose.Ordinals, AddressPurpose.Payment, AddressPurpose.Stacks],
-              message: 'Authorize SpendChain to access your Stacks account for read-only analytics.',
-            });
-
-            const directRes: any = await withTimeout(directPromise, 40000, 'WALLET_TIMEOUT');
-
-            const directAddresses: any[] = 
-              Array.isArray(directRes?.result?.addresses) ? directRes.result.addresses :
-              Array.isArray(directRes?.result) ? directRes.result :
-              Array.isArray(directRes?.addresses) ? directRes.addresses :
-              Array.isArray(directRes) ? directRes : [];
-
-            const stacksObj = directAddresses.find(
-              (addr: any) =>
-                addr.purpose === 'stacks' ||
-                addr.purpose === AddressPurpose.Stacks ||
-                addr.symbol === 'STX' ||
-                addr.address?.startsWith('SP') ||
-                addr.address?.startsWith('ST')
-            ) || directAddresses.find((addr: any) => addr.address?.startsWith('SP') || addr.address?.startsWith('ST'));
-
-            if (stacksObj && stacksObj.address) {
-              return {
-                address: stacksObj.address,
-                publicKey: stacksObj.publicKey,
-                walletType: 'xverse',
-                chain: 'stacks-mainnet',
-                connectedAt: Date.now(),
-              };
-            }
-          } catch (err: any) {
-            if (isUserRejection(err)) {
-              throw new Error('USER_REJECTED');
-            }
-          }
-        }
-      }
-    }
-
-    // --- STRATEGY 2: sats-connect (Official Library Request) ---
+    // --- PRIMARY: Official sats-connect Request ---
     try {
-      const satsPromise = request('getAddresses', {
-        purposes: [AddressPurpose.Ordinals, AddressPurpose.Payment, AddressPurpose.Stacks],
-        message: 'Authorize SpendChain to access your Stacks account for read-only analytics & tax ledger tracking.',
-      });
+      const response: any = await withTimeout(
+        request('getAddresses', {
+          purposes: [AddressPurpose.Ordinals, AddressPurpose.Payment, AddressPurpose.Stacks],
+          message: 'Authorize SpendChain to access your Stacks account for read-only analytics & tax ledger tracking.',
+        }),
+        60000,
+        'WALLET_TIMEOUT'
+      );
 
-      const response: any = await withTimeout(satsPromise, 40000, 'WALLET_TIMEOUT');
-
-      if (response?.error) {
-        const errCode = response.error.code;
-        if (errCode === RpcErrorCode.USER_REJECTION || errCode === -31001 || isUserRejection(response.error)) {
+      if (response?.status === 'error' || response?.error) {
+        const errObj = response.error || response;
+        const errCode = errObj.code;
+        if (errCode === RpcErrorCode.USER_REJECTION || errCode === -31001 || isUserRejection(errObj)) {
           throw new Error('USER_REJECTED');
         }
       }
@@ -184,14 +128,69 @@ export const xverseAdapter: WalletAdapter = {
         }
       }
     } catch (err: any) {
-      const msg = err?.message || String(err);
-      if (msg === 'USER_REJECTED' || isUserRejection(err)) {
+      if (err?.message === 'USER_REJECTED' || isUserRejection(err)) {
         throw new Error('USER_REJECTED');
       }
-      if (msg === 'WALLET_TIMEOUT') {
+      if (err?.message === 'WALLET_TIMEOUT') {
         throw err;
       }
-      console.warn('sats-connect attempt note:', msg);
+      console.warn('sats-connect attempt note:', err);
+    }
+
+    // --- SECONDARY FALLBACK: Single direct call to window provider ---
+    if (typeof window !== 'undefined') {
+      const win = window as any;
+      const provider =
+        win.XverseProviders?.BitcoinProvider ||
+        win.BitcoinProvider ||
+        win.XverseProviders?.StacksProvider ||
+        win.StacksProvider ||
+        win.Xverse;
+
+      if (provider && typeof provider.request === 'function') {
+        try {
+          const directRes: any = await withTimeout(
+            provider.request('getAddresses', {
+              purposes: [AddressPurpose.Ordinals, AddressPurpose.Payment, AddressPurpose.Stacks],
+              message: 'Authorize SpendChain',
+            }),
+            30000,
+            'WALLET_TIMEOUT'
+          );
+
+          const directAddresses: any[] = 
+            Array.isArray(directRes?.result?.addresses) ? directRes.result.addresses :
+            Array.isArray(directRes?.result) ? directRes.result :
+            Array.isArray(directRes?.addresses) ? directRes.addresses :
+            Array.isArray(directRes) ? directRes : [];
+
+          const stacksObj = directAddresses.find(
+            (addr: any) =>
+              addr.purpose === 'stacks' ||
+              addr.purpose === AddressPurpose.Stacks ||
+              addr.symbol === 'STX' ||
+              addr.address?.startsWith('SP') ||
+              addr.address?.startsWith('ST')
+          ) || directAddresses.find((addr: any) => addr.address?.startsWith('SP') || addr.address?.startsWith('ST'));
+
+          if (stacksObj && stacksObj.address) {
+            return {
+              address: stacksObj.address,
+              publicKey: stacksObj.publicKey,
+              walletType: 'xverse',
+              chain: 'stacks-mainnet',
+              connectedAt: Date.now(),
+            };
+          }
+        } catch (err: any) {
+          if (isUserRejection(err)) {
+            throw new Error('USER_REJECTED');
+          }
+          if (err?.message === 'WALLET_TIMEOUT') {
+            throw err;
+          }
+        }
+      }
     }
 
     throw new Error('WALLET_TIMEOUT');
