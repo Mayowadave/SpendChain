@@ -2,6 +2,8 @@ import React, { useState, useEffect } from 'react';
 import { 
   ArrowRight, 
   ShieldCheck, 
+  Shield,
+  Eye,
   Bot, 
   Sparkles, 
   CheckCircle2, 
@@ -330,6 +332,97 @@ export const LandingPage: React.FC<LandingPageProps> = ({
             </div>
 
           </div>
+        </div>
+      </section>
+
+      {/* SECURITY FIRST TRUST SIGNAL BAR */}
+      <section className="py-8 sm:py-10 border-y border-white/[0.08] bg-[#05091a]/80 backdrop-blur-xl relative overflow-hidden">
+        {/* Subtle background glow */}
+        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-3/4 h-24 bg-emerald-500/5 blur-3xl pointer-events-none" />
+
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          
+          <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 pb-6 border-b border-white/5">
+            <div className="flex items-center space-x-3">
+              <div className="p-2 rounded-xl bg-emerald-500/10 border border-emerald-500/20 text-emerald-400">
+                <ShieldCheck className="w-5 h-5" />
+              </div>
+              <div>
+                <div className="flex items-center space-x-2">
+                  <span className="font-extrabold text-sm sm:text-base text-white tracking-tight">Security First Architecture</span>
+                  <span className="px-2 py-0.5 rounded-full bg-emerald-500/15 text-emerald-300 text-[10px] font-mono font-bold border border-emerald-500/30">
+                    Verified Safe
+                  </span>
+                </div>
+                <p className="text-xs text-gray-400 font-sans mt-0.5">Built to protect your wallet and ensure complete financial privacy on Stacks</p>
+              </div>
+            </div>
+
+            <div className="flex items-center space-x-2 text-xs font-mono text-gray-400">
+              <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
+              <span>Read-Only Public Ledger Audit</span>
+            </div>
+          </div>
+
+          {/* 3 Badges */}
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4 pt-6">
+            
+            {/* Badge 1: Non-custodial */}
+            <div className="p-5 rounded-2xl bg-slate-900/60 border border-white/10 hover:border-emerald-500/30 transition-all space-y-2.5 group">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center space-x-2.5">
+                  <div className="p-2 rounded-lg bg-emerald-500/10 text-emerald-400 group-hover:scale-105 transition-transform">
+                    <Shield className="w-4 h-4" />
+                  </div>
+                  <h3 className="font-bold text-sm text-white group-hover:text-emerald-300 transition-colors">Non-custodial</h3>
+                </div>
+                <span className="px-2 py-0.5 rounded bg-emerald-500/10 text-emerald-300 text-[10px] font-mono font-semibold border border-emerald-500/20">
+                  100% User Control
+                </span>
+              </div>
+              <p className="text-xs text-gray-400 leading-relaxed font-sans">
+                Your keys remain entirely in Leather or Xverse. SpendChain never holds funds, requests transfer permissions, or executes transactions.
+              </p>
+            </div>
+
+            {/* Badge 2: Read-only access */}
+            <div className="p-5 rounded-2xl bg-slate-900/60 border border-white/10 hover:border-indigo-500/30 transition-all space-y-2.5 group">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center space-x-2.5">
+                  <div className="p-2 rounded-lg bg-indigo-500/10 text-indigo-400 group-hover:scale-105 transition-transform">
+                    <Eye className="w-4 h-4" />
+                  </div>
+                  <h3 className="font-bold text-sm text-white group-hover:text-indigo-300 transition-colors">Read-only access</h3>
+                </div>
+                <span className="px-2 py-0.5 rounded bg-indigo-500/10 text-indigo-300 text-[10px] font-mono font-semibold border border-indigo-500/20">
+                  Zero Contract Risk
+                </span>
+              </div>
+              <p className="text-xs text-gray-400 leading-relaxed font-sans">
+                Queries public blockchain records purely to compute financial analytics. No smart contract approvals or spending limits requested.
+              </p>
+            </div>
+
+            {/* Badge 3: Privacy-focused */}
+            <div className="p-5 rounded-2xl bg-slate-900/60 border border-white/10 hover:border-purple-500/30 transition-all space-y-2.5 group">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center space-x-2.5">
+                  <div className="p-2 rounded-lg bg-purple-500/10 text-purple-400 group-hover:scale-105 transition-transform">
+                    <Lock className="w-4 h-4" />
+                  </div>
+                  <h3 className="font-bold text-sm text-white group-hover:text-purple-300 transition-colors">Privacy-focused</h3>
+                </div>
+                <span className="px-2 py-0.5 rounded bg-purple-500/10 text-purple-300 text-[10px] font-mono font-semibold border border-purple-500/20">
+                  No Accounts or Logs
+                </span>
+              </div>
+              <p className="text-xs text-gray-400 leading-relaxed font-sans">
+                No KYC, account signup, or IP tracking. Analyze your wallet activity anonymously without leaving personal data footprints.
+              </p>
+            </div>
+
+          </div>
+
         </div>
       </section>
 
