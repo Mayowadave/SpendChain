@@ -11,6 +11,7 @@ import {
   Globe
 } from 'lucide-react';
 import { Transaction, TransactionCategory, TaxTag, ChainId } from '../types';
+import { STX_PRICE_USD } from '../data/mockData';
 import { Button, Badge, Card, SearchBar, Input, Select, Modal, EmptyState, TableSkeleton } from './ui';
 
 interface TransactionsViewProps {
@@ -109,7 +110,7 @@ export const TransactionsView: React.FC<TransactionsViewProps> = ({
     if (!newCounterparty || !newAmountUsd) return;
 
     const usdVal = Number(newAmountUsd);
-    const stxVal = +(usdVal / 1.85).toFixed(2);
+    const stxVal = +(usdVal / STX_PRICE_USD).toFixed(2);
 
     const newTx: Transaction = {
       id: `tx-${Date.now()}`,

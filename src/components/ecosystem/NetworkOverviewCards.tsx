@@ -10,7 +10,7 @@ export const NetworkOverviewCards: React.FC<Props> = ({ stats }) => {
   const cards = [
     {
       title: 'STX Price',
-      value: `$${stats.stxPriceUsd.toFixed(2)}`,
+      value: `$${stats.stxPriceUsd < 1 ? stats.stxPriceUsd.toFixed(3) : stats.stxPriceUsd.toFixed(2)}`,
       change: `${stats.priceChange24h >= 0 ? '+' : ''}${stats.priceChange24h.toFixed(2)}%`,
       isPositive: stats.priceChange24h >= 0,
       icon: DollarSign,

@@ -6,7 +6,7 @@ export interface StacksAccountBalance {
   txCount: number;
 }
 
-const STX_PRICE_ESTIMATE = 1.85;
+const STX_PRICE_ESTIMATE = 0.133;
 
 /**
  * Fetch real address balance and BNS domain name from public Hiro Stacks API

@@ -1,6 +1,6 @@
 import { Wallet, Transaction, ChainInfo, SpendCategoryBreakdown, ChainSpendSummary, AppSettings, ProtocolMetric } from '../types';
 
-export const STX_PRICE_USD = 1.85;
+export const STX_PRICE_USD = 0.133;
 export const BTC_PRICE_USD = 92500.00;
 
 export const SUPPORTED_CHAINS: Record<string, ChainInfo> = {

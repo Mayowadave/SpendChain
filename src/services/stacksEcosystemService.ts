@@ -11,7 +11,7 @@ import {
 
 // Mock Network Stats
 export const INITIAL_NETWORK_STATS: StacksNetworkStats = {
-  stxPriceUsd: 1.85,
+  stxPriceUsd: 0.133,
   priceChange24h: 4.82,
   marketCapUsd: 2715000000,
   circulatingSupply: 1467000000,

@@ -125,7 +125,7 @@ export const Navbar: React.FC<NavbarProps> = ({
           <div className="hidden xl:flex items-center space-x-3 text-xs bg-slate-900/90 px-3.5 py-1.5 rounded-xl border border-white/10 shadow-inner">
             <div className="flex items-center space-x-1.5 text-indigo-300">
               <Zap className="w-3.5 h-3.5 text-amber-400 fill-amber-400/20" />
-              <span className="font-semibold font-mono">STX ${STX_PRICE_USD.toFixed(2)}</span>
+              <span className="font-semibold font-mono">STX ${STX_PRICE_USD < 1 ? STX_PRICE_USD.toFixed(3) : STX_PRICE_USD.toFixed(2)}</span>
             </div>
             <div className="h-3 w-[1px] bg-white/10" />
             <div className="flex items-center space-x-1 text-teal-400">
@@ -232,7 +232,7 @@ export const Navbar: React.FC<NavbarProps> = ({
           </div>
 
           <div className="pt-2 flex items-center justify-between text-xs text-indigo-300 font-mono px-2">
-            <span>STX Price: ${STX_PRICE_USD.toFixed(2)}</span>
+            <span>STX Price: ${STX_PRICE_USD < 1 ? STX_PRICE_USD.toFixed(3) : STX_PRICE_USD.toFixed(2)}</span>
             <span className="text-emerald-400 font-semibold">Nakamoto Active</span>
           </div>
         </div>

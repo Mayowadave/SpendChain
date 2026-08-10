@@ -1,6 +1,6 @@
 import { Wallet, Transaction, Sip010Token, Sip009Nft, StackingInfo, TransactionCategory, TaxTag } from '../types';
 
-export const STX_PRICE_USD = 1.85;
+export const STX_PRICE_USD = 0.133;
 export const SBTC_PRICE_USD = 92500;
 
 interface HiroBalancesResponse {

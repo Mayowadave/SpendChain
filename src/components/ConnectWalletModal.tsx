@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Wallet, ShieldCheck, ArrowRight, CheckCircle2, AlertCircle, LogOut, Download, RefreshCw, ExternalLink } from 'lucide-react';
 import { Wallet as WalletType, ChainId } from '../types';
+import { STX_PRICE_USD } from '../data/mockData';
 import { Modal, Button, Badge, Input } from './ui';
 import { useWallet } from '../context/WalletContext';
 import { WalletProviderId } from '../lib/wallets';
@@ -62,7 +63,7 @@ export const ConnectWalletModal: React.FC<ConnectWalletModalProps> = ({
         type: walletSession.walletType === 'xverse' ? 'Stacks (Leather/Xverse)' : 'Stacks (Leather/Xverse)',
         balanceStx: stxBal,
         balanceSbtc: sbtcBal,
-        balanceUsd: accountData?.stxUsdValue || Math.floor(stxBal * 1.85 + sbtcBal * 92500),
+        balanceUsd: accountData?.stxUsdValue || Math.floor(stxBal * STX_PRICE_USD + sbtcBal * 92500),
         healthScore: 98,
         unspentApprovalsCount: 1,
         clarityCalls30d: 45,
@@ -105,7 +106,7 @@ export const ConnectWalletModal: React.FC<ConnectWalletModalProps> = ({
 
     const stxBal = Math.floor(Math.random() * 65000) + 8000;
     const sbtcBal = +(Math.random() * 0.9).toFixed(2);
-    const usdVal = Math.floor(stxBal * 1.85 + sbtcBal * 92500);
+    const usdVal = Math.floor(stxBal * STX_PRICE_USD + sbtcBal * 92500);
 
     const newWallet: Partial<WalletType> = {
       name: walletName.trim() || (isBns ? address : `Stacks Wallet (${address.substring(0, 6)}...)`),

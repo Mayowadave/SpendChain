@@ -45,16 +45,38 @@ export const LandingPage: React.FC<LandingPageProps> = ({
 }) => {
   const [activeHeroTab, setActiveHeroTab] = useState<'overview' | 'copilot' | 'health'>('overview');
   const [activeShowcaseTab, setActiveShowcaseTab] = useState<number>(0);
-  const [stxPrice, setStxPrice] = useState<number>(1.84);
+  const [stxPrice, setStxPrice] = useState<number>(0.133);
   const [networkBlock, setNetworkBlock] = useState<number>(884210);
 
-  // Periodic subtle metric updates to give real-time vitality feel
+  // Fetch real live STX price and handle block height updates
   useEffect(() => {
+    let isMounted = true;
+
+    const fetchRealStxPrice = async () => {
+      try {
+        const res = await fetch('https://api.coingecko.com/api/v3/simple/price?ids=blockstack&vs_currencies=usd');
+        if (res.ok) {
+          const data = await res.json();
+          if (data?.blockstack?.usd && isMounted) {
+            setStxPrice(data.blockstack.usd);
+          }
+        }
+      } catch (e) {
+        // Fallback to current market value
+      }
+    };
+
+    fetchRealStxPrice();
+
     const interval = setInterval(() => {
-      setStxPrice(prev => Number((prev + (Math.random() * 0.02 - 0.01)).toFixed(2)));
+      fetchRealStxPrice();
       setNetworkBlock(prev => prev + 1);
-    }, 8000);
-    return () => clearInterval(interval);
+    }, 15000);
+
+    return () => {
+      isMounted = false;
+      clearInterval(interval);
+    };
   }, []);
 
   const handleExplorerClick = () => {
@@ -443,7 +465,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({
             
             <div className="p-4 rounded-2xl bg-slate-900/80 border border-white/10 hover:border-indigo-500/30 transition-all space-y-1">
               <span className="text-[10px] font-mono text-gray-400 uppercase tracking-wider">Current STX Price</span>
-              <div className="text-base font-bold text-white font-mono">${stxPrice.toFixed(2)}</div>
+              <div className="text-base font-bold text-white font-mono">${stxPrice < 1 ? stxPrice.toFixed(3) : stxPrice.toFixed(2)}</div>
               <span className="text-[10px] font-mono text-emerald-400 font-bold">+5.2% 24h</span>
             </div>
 
