@@ -185,8 +185,8 @@ export const LandingPage: React.FC<LandingPageProps> = ({
                     <div>
                       <div className="flex items-center space-x-2">
                         <span className="text-xs font-mono font-bold text-white">SP3F...8K2</span>
-                        <span className="px-2 py-0.2 rounded bg-indigo-500/20 text-indigo-300 text-[10px] font-mono border border-indigo-500/30">
-                          Mainnet
+                        <span className="px-2 py-0.5 rounded bg-amber-500/20 text-amber-300 text-[10px] font-mono border border-amber-500/40 font-bold">
+                          Sample Demo Data
                         </span>
                       </div>
                       <p className="text-[10px] text-gray-400 font-mono">Nakamoto Block #{networkBlock.toLocaleString()}</p>
@@ -345,9 +345,9 @@ export const LandingPage: React.FC<LandingPageProps> = ({
                 )}
 
                 {/* Floating Micro Badge overlay */}
-                <div className="absolute -bottom-3 -right-3 px-3 py-1.5 rounded-2xl bg-slate-950 border border-indigo-500/40 text-[10px] font-mono text-indigo-200 shadow-xl flex items-center space-x-1.5 pointer-events-none">
-                  <ShieldCheck className="w-3.5 h-3.5 text-emerald-400" />
-                  <span>Verified Stacks Mainnet Data</span>
+                <div className="absolute -bottom-3 -right-3 px-3 py-1.5 rounded-2xl bg-slate-950 border border-amber-500/40 text-[10px] font-mono text-amber-200 shadow-xl flex items-center space-x-1.5 pointer-events-none">
+                  <ShieldCheck className="w-3.5 h-3.5 text-amber-400" />
+                  <span>Illustrative Demo Data • Connect Wallet for Live Stats</span>
                 </div>
 
               </div>
@@ -656,7 +656,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({
                     <BarChart3 className="w-4 h-4 text-indigo-400" />
                     <span className="text-xs font-bold text-white font-mono">Financial Workspace Summary</span>
                   </div>
-                  <span className="text-[10px] font-mono text-emerald-400">● Live Sync</span>
+                  <span className="text-[10px] font-mono text-amber-300 font-bold px-2 py-0.5 rounded bg-amber-500/10 border border-amber-500/20">Sample Preview Data</span>
                 </div>
 
                 <div className="grid grid-cols-3 gap-3 text-xs font-mono">

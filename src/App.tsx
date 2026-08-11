@@ -98,8 +98,43 @@ function AppContent() {
 
   // Modal States
   const [isConnectModalOpen, setIsConnectModalOpen] = useState(false);
+  const [pendingTab, setPendingTab] = useState<string | null>(null);
   const [selectedTxForDetail, setSelectedTxForDetail] = useState<Transaction | null>(null);
   const [aiCopilotPrompt, setAiCopilotPrompt] = useState<string | undefined>(undefined);
+
+  // Tab switch handler guarded by wallet connection
+  const handleTabChange = (tab: string) => {
+    if (tab !== 'landing' && !isConnected && !walletSession?.address) {
+      setPendingTab(tab);
+      setIsConnectModalOpen(true);
+      return;
+    }
+    setCurrentTab(tab);
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
+
+  const handleOpenConnectModal = (targetTab: string = 'dashboard') => {
+    if (isConnected || walletSession?.address) {
+      setCurrentTab(targetTab);
+    } else {
+      setPendingTab(targetTab);
+      setIsConnectModalOpen(true);
+    }
+  };
+
+  // Automatically navigate to pending tab upon successful wallet connection, or fallback to landing if disconnected
+  useEffect(() => {
+    if (isConnected || walletSession?.address) {
+      if (pendingTab) {
+        setCurrentTab(pendingTab);
+        setPendingTab(null);
+      }
+    } else {
+      if (currentTab !== 'landing') {
+        setCurrentTab('landing');
+      }
+    }
+  }, [isConnected, walletSession?.address]);
 
   // Computed Totals (Memoized for high performance)
   const totalBalanceUsd = useMemo(() => {
@@ -114,7 +149,8 @@ function AppContent() {
   const handleAddWallet = (newWalletPartial: Partial<Wallet>) => {
     if (newWalletPartial.address) {
       setInspectAddress(newWalletPartial.address);
-      setCurrentTab('dashboard');
+      setCurrentTab(pendingTab || 'dashboard');
+      setPendingTab(null);
     }
   };
 
@@ -145,11 +181,8 @@ function AppContent() {
       {/* Top Navbar */}
       <Navbar
         currentTab={currentTab}
-        onTabChange={(tab) => {
-          setCurrentTab(tab);
-          window.scrollTo({ top: 0, behavior: 'smooth' });
-        }}
-        onOpenConnectModal={() => setIsConnectModalOpen(true)}
+        onTabChange={handleTabChange}
+        onOpenConnectModal={() => handleOpenConnectModal('dashboard')}
         settings={settings}
         walletCount={wallets.length}
         totalBalanceUsd={totalBalanceUsd}
@@ -158,9 +191,9 @@ function AppContent() {
       {/* Main Workspace Body */}
       {currentTab === 'landing' ? (
         <LandingPage
-          onLaunchApp={() => setCurrentTab('dashboard')}
-          onOpenConnectModal={() => setIsConnectModalOpen(true)}
-          onNavigateToExplorer={() => setCurrentTab('stacks-explorer')}
+          onLaunchApp={() => handleTabChange('dashboard')}
+          onOpenConnectModal={() => handleOpenConnectModal('dashboard')}
+          onNavigateToExplorer={() => handleTabChange('stacks-explorer')}
         />
       ) : (
         <div className="max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 pt-6 flex flex-1 gap-6">
@@ -168,10 +201,7 @@ function AppContent() {
           {/* Workspace Left Navigation Sidebar */}
           <Sidebar
             currentTab={currentTab}
-            onTabChange={(tab) => {
-              setCurrentTab(tab);
-              window.scrollTo({ top: 0, behavior: 'smooth' });
-            }}
+            onTabChange={handleTabChange}
             unspentApprovals={unspentApprovalsCount}
           />
 
